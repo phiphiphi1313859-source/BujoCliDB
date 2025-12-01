@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "clibujo"
+version = "1.0.0"
+description = "CLI Bullet Journal - A command-line bullet journal implementing Ryder Carroll's method"
+readme = {text = "CLI Bullet Journal - A command-line bullet journal implementing Ryder Carroll's method", content-type = "text/plain"}
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "CLIBuJo" }
+]
+keywords = ["bullet-journal", "cli", "productivity", "todo", "task-manager"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Scheduling",
+]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "prompt-toolkit>=3.0.0",
+    "pyyaml>=6.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+export = [
+    "weasyprint>=60.0",
+    "markdown>=3.5.0",
+]
+
+[project.scripts]
+bujo = "clibujo.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/clibujo/clibujo"
+Repository = "https://github.com/clibujo/clibujo"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/clibujo"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]

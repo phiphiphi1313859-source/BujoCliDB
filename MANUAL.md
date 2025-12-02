@@ -1696,13 +1696,13 @@ This undoes your last action.
 ### Undo Multiple
 
 ```bash
-bujo undo multiple 3   # Undo last 3 actions
+bujo undo-history multiple 3   # Undo last 3 actions
 ```
 
 ### View Undo History
 
 ```bash
-bujo undo-history
+bujo undo-history history
 ```
 
 **Output:**
@@ -1714,6 +1714,12 @@ Recent actions:
   3. Updated entry #4
   4. Mark habit done: "Morning walk"
   5. Deleted entry #3
+```
+
+### Clear Undo History
+
+```bash
+bujo undo-history clear
 ```
 
 ### What Can Be Undone?

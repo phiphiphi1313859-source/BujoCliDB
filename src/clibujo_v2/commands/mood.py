@@ -639,6 +639,19 @@ def target(ctx):
             click.echo(f"  {metric}: {value}")
 
 
+@target.command("view")
+def target_view_cmd():
+    """View current targets."""
+    targets = get_all_targets()
+    if not targets:
+        click.echo("No targets set. Use 'bujo mood target set <metric> <value>'")
+        return
+
+    click.echo("\nCurrent Targets\n")
+    for metric, value in targets.items():
+        click.echo(f"  {metric}: {value}")
+
+
 @target.command("set")
 @click.argument("metric")
 @click.argument("value", type=float)

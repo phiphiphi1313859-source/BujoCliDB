@@ -7,6 +7,7 @@ from . import __version__
 from .core.db import ensure_db, init_db
 from .core.entries import get_entries_by_date, create_entry
 from .core.habits import get_habits_due_on_date, is_completed_on_date, record_completion, get_habit_by_name
+from .core.collections import get_collection_by_name
 from .core.undo import undo_last_action
 from .commands.entries import entries, parse_date_arg, parse_signifier
 from .commands.collections import collections
@@ -62,10 +63,12 @@ def view_today():
 # Quick add commands
 @cli.command("add")
 @click.argument("content", nargs=-1, required=True)
-@click.option("--date", "-d", "date_arg", default="today", help="Date for entry")
+@click.option("--date", "-d", "date_arg", default=None, help="Date for entry")
 @click.option("--type", "-t", "entry_type", type=click.Choice(["task", "event", "note"]), default="task")
+@click.option("--collection", "-c", "collection_name", help="Add to collection")
+@click.option("--month", "-m", "month_arg", help="Add to monthly log (YYYY-MM)")
 @click.option("--priority", "-p", is_flag=True, help="Mark as priority")
-def quick_add(content, date_arg, entry_type, priority):
+def quick_add(content, date_arg, entry_type, collection_name, month_arg, priority):
     """Quick add an entry to today."""
     text = " ".join(content)
     signifier, text = parse_signifier(text)
@@ -73,12 +76,32 @@ def quick_add(content, date_arg, entry_type, priority):
     if priority:
         signifier = "priority"
 
-    entry_date = parse_date_arg(date_arg)
+    # Resolve collection
+    collection_id = None
+    if collection_name:
+        coll = get_collection_by_name(collection_name)
+        if not coll:
+            raise click.ClickException(f"Collection not found: {collection_name}")
+        collection_id = coll.id
+
+    # Determine entry_date vs entry_month
+    entry_date = None
+    entry_month = None
+
+    if month_arg:
+        entry_month = month_arg
+    elif collection_id and not date_arg:
+        # Adding to collection without date - no date needed
+        pass
+    else:
+        entry_date = parse_date_arg(date_arg or "today")
 
     entry = create_entry(
         content=text,
         entry_type=entry_type,
         entry_date=entry_date,
+        entry_month=entry_month,
+        collection_id=collection_id,
         signifier=signifier,
     )
 

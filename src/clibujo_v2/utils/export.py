@@ -31,6 +31,15 @@ from ..core.models import (
     STATUS_SYMBOLS,
     ENTRY_TYPE_SYMBOLS,
 )
+from ..core.mood import (
+    get_mood_entries,
+    get_medications,
+    get_med_logs_for_date,
+    get_episodes,
+    get_all_baselines,
+    get_all_targets,
+    MoodEntry,
+)
 
 
 class BujoPDF(FPDF):
@@ -163,6 +172,195 @@ class BujoPDF(FPDF):
             self.ln()
 
         self.ln(5)
+
+    def add_mood_entry(self, entry: MoodEntry):
+        """Add a single mood entry to the PDF."""
+        self.set_font("Courier", "", 10)
+
+        # Date header
+        try:
+            dt = datetime.strptime(entry.date, "%Y-%m-%d")
+            day_name = dt.strftime("%a")
+            formatted = dt.strftime("%b %d")
+            date_str = f"{day_name} {formatted}"
+        except ValueError:
+            date_str = entry.date
+
+        self.set_font("Helvetica", "B", 10)
+        self.cell(30, 6, date_str)
+
+        # Core metrics
+        self.set_font("Courier", "", 9)
+        metrics = []
+        if entry.mood is not None:
+            mood_str = f"+{entry.mood}" if entry.mood >= 0 else str(entry.mood)
+            metrics.append(f"Mood:{mood_str:>3}")
+        if entry.energy is not None:
+            metrics.append(f"Energy:{entry.energy:>2}")
+        if entry.sleep_hours is not None:
+            metrics.append(f"Sleep:{entry.sleep_hours:.1f}h")
+
+        self.cell(0, 6, "  ".join(metrics))
+        self.ln()
+
+        # Additional dimensions if present
+        extra = []
+        if entry.irritability is not None:
+            extra.append(f"Irritability:{entry.irritability}")
+        if entry.anxiety is not None:
+            extra.append(f"Anxiety:{entry.anxiety}")
+        if entry.racing_thoughts is not None:
+            extra.append(f"Racing:{entry.racing_thoughts}")
+        if entry.impulsivity is not None:
+            extra.append(f"Impulsivity:{entry.impulsivity}")
+        if entry.concentration is not None:
+            extra.append(f"Concentration:{entry.concentration}")
+
+        if extra:
+            self.set_font("Courier", "", 8)
+            self.cell(30, 5, "")
+            self.cell(0, 5, "  ".join(extra))
+            self.ln()
+
+        # Note if present
+        if entry.note:
+            self.set_font("Helvetica", "I", 9)
+            self.cell(30, 5, "")
+            self.multi_cell(0, 5, f'"{entry.note}"')
+
+    def add_mood_chart(self, entries: list, title: str = "Mood Trend"):
+        """Add a simple text-based mood chart."""
+        if not entries:
+            return
+
+        self.subsection_title(title)
+        self.set_font("Courier", "", 8)
+
+        # Create a simple ASCII chart
+        # Scale: -5 to +5 = 11 levels, we'll use 21 chars width
+        chart_width = 21
+        mid = chart_width // 2
+
+        for entry in entries:
+            if entry.mood is None:
+                continue
+
+            try:
+                dt = datetime.strptime(entry.date, "%Y-%m-%d")
+                date_str = dt.strftime("%m/%d")
+            except ValueError:
+                date_str = entry.date[:5]
+
+            # Map mood (-5 to +5) to position (0 to 20)
+            pos = int((entry.mood + 5) * 2)
+            pos = max(0, min(chart_width - 1, pos))
+
+            # Build the bar
+            bar = ['.'] * chart_width
+            bar[mid] = '|'  # Center line
+            bar[pos] = '*'
+
+            self.cell(18, 4, date_str)
+            self.cell(0, 4, ''.join(bar) + f"  ({entry.mood:+d})")
+            self.ln()
+
+        # Legend
+        self.ln(2)
+        self.set_font("Helvetica", "I", 8)
+        self.cell(0, 4, "Scale: -5 (depressed) | 0 (baseline) | +5 (elevated)")
+        self.ln(5)
+
+    def add_mood_summary(self, entries: list):
+        """Add mood statistics summary."""
+        if not entries:
+            return
+
+        self.subsection_title("Statistics")
+        self.set_font("Courier", "", 10)
+
+        # Calculate stats
+        moods = [e.mood for e in entries if e.mood is not None]
+        energies = [e.energy for e in entries if e.energy is not None]
+        sleeps = [e.sleep_hours for e in entries if e.sleep_hours is not None]
+
+        if moods:
+            avg_mood = sum(moods) / len(moods)
+            min_mood = min(moods)
+            max_mood = max(moods)
+            self.cell(0, 6, f"  Mood: avg {avg_mood:+.1f}, range {min_mood:+d} to {max_mood:+d}")
+            self.ln()
+
+        if energies:
+            avg_energy = sum(energies) / len(energies)
+            self.cell(0, 6, f"  Energy: avg {avg_energy:.1f}/10")
+            self.ln()
+
+        if sleeps:
+            avg_sleep = sum(sleeps) / len(sleeps)
+            self.cell(0, 6, f"  Sleep: avg {avg_sleep:.1f} hours")
+            self.ln()
+
+        # Count entries
+        self.ln(2)
+        self.cell(0, 6, f"  Days tracked: {len(entries)}")
+        self.ln(5)
+
+    def add_medication_section(self, meds: list, start_date: str, end_date: str):
+        """Add medication adherence section."""
+        if not meds:
+            return
+
+        self.subsection_title("Medications")
+        self.set_font("Courier", "", 10)
+
+        for med in meds:
+            if not med.active:
+                continue
+            line = f"  {med.name}"
+            if med.dosage:
+                line += f" ({med.dosage})"
+            if med.time_of_day:
+                line += f" - {med.time_of_day}"
+            self.cell(0, 6, line)
+            self.ln()
+
+        self.ln(3)
+
+    def add_episode_section(self, episodes: list):
+        """Add episode history section."""
+        if not episodes:
+            return
+
+        self.subsection_title("Episodes")
+        self.set_font("Courier", "", 10)
+
+        for ep in episodes:
+            duration = ""
+            if ep.end_date:
+                try:
+                    start = datetime.strptime(ep.start_date, "%Y-%m-%d")
+                    end = datetime.strptime(ep.end_date, "%Y-%m-%d")
+                    days = (end - start).days + 1
+                    duration = f" ({days} days)"
+                except ValueError:
+                    pass
+                date_range = f"{ep.start_date} to {ep.end_date}"
+            else:
+                date_range = f"{ep.start_date} - ongoing"
+
+            self.cell(0, 6, f"  {ep.type.title()}: {date_range}{duration}")
+            self.ln()
+
+            if ep.severity:
+                self.cell(0, 5, f"    Severity: {ep.severity}/5")
+                self.ln()
+            if ep.note:
+                self.set_font("Helvetica", "I", 9)
+                self.cell(0, 5, f"    {ep.note}")
+                self.ln()
+                self.set_font("Courier", "", 10)
+
+        self.ln(3)
 
     def add_habit_calendar(self, habit: Habit, year: int, month: int):
         """Add a habit calendar for a month."""
@@ -543,3 +741,154 @@ def export_all(output_path: Optional[Path] = None) -> Path:
 
     pdf.output(str(output_path))
     return output_path
+
+
+def export_mood(
+    start_date: str,
+    end_date: str,
+    output_path: Optional[Path] = None,
+    include_chart: bool = True,
+    include_meds: bool = True,
+    include_episodes: bool = True,
+) -> Path:
+    """Export mood log to PDF for therapy sessions.
+
+    Args:
+        start_date: Start date (YYYY-MM-DD)
+        end_date: End date (YYYY-MM-DD)
+        output_path: Optional output path
+        include_chart: Include mood trend chart
+        include_meds: Include medication list
+        include_episodes: Include episode history
+
+    Returns:
+        Path to the generated PDF
+    """
+    check_fpdf()
+    ensure_db()
+
+    if output_path is None:
+        output_path = Path(f"mood_report_{start_date}_to_{end_date}.pdf")
+
+    # Get mood entries
+    entries = get_mood_entries(start_date, end_date)
+
+    # Calculate date range for title
+    try:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        title_range = f"{start_dt.strftime('%b %d')} - {end_dt.strftime('%b %d, %Y')}"
+    except ValueError:
+        title_range = f"{start_date} to {end_date}"
+
+    pdf = BujoPDF(title=f"Mood Report: {title_range}")
+    pdf.add_page()
+
+    # Summary section
+    pdf.section_title("Summary")
+    pdf.add_mood_summary(entries)
+
+    # Mood trend chart
+    if include_chart and entries:
+        pdf.add_mood_chart(entries)
+
+    # Daily entries
+    pdf.section_title("Daily Log")
+    if entries:
+        for entry in entries:
+            pdf.add_mood_entry(entry)
+    else:
+        pdf.set_font("Helvetica", "I", 10)
+        pdf.cell(0, 8, "  No mood entries for this period.")
+        pdf.ln()
+
+    # Medications
+    if include_meds:
+        meds = get_medications(active_only=False)
+        if meds:
+            pdf.add_page()
+            pdf.section_title("Medications")
+            pdf.add_medication_section(meds, start_date, end_date)
+
+    # Episodes
+    if include_episodes:
+        episodes = get_episodes(months=12)
+        # Filter to relevant date range
+        relevant_episodes = []
+        for ep in episodes:
+            # Include if episode overlaps with our date range
+            if ep.end_date:
+                if ep.start_date <= end_date and ep.end_date >= start_date:
+                    relevant_episodes.append(ep)
+            else:
+                if ep.start_date <= end_date:
+                    relevant_episodes.append(ep)
+
+        if relevant_episodes:
+            if not include_meds:
+                pdf.add_page()
+            pdf.section_title("Episodes")
+            pdf.add_episode_section(relevant_episodes)
+
+    # Baselines and targets
+    baselines = get_all_baselines()
+    targets = get_all_targets()
+
+    if baselines or targets:
+        pdf.section_title("Reference Values")
+
+        if targets:
+            pdf.subsection_title("Your Targets")
+            pdf.set_font("Courier", "", 10)
+            for metric, value in targets.items():
+                pdf.cell(0, 6, f"  {metric}: {value}")
+                pdf.ln()
+            pdf.ln(3)
+
+        if baselines:
+            pdf.subsection_title("Your Baselines")
+            pdf.set_font("Courier", "", 10)
+            for bl in baselines:
+                if bl.std_dev:
+                    low = bl.value - bl.std_dev
+                    high = bl.value + bl.std_dev
+                    pdf.cell(0, 6, f"  {bl.metric}: {bl.value:.1f} (range {low:.1f} to {high:.1f})")
+                else:
+                    pdf.cell(0, 6, f"  {bl.metric}: {bl.value:.1f}")
+                pdf.ln()
+
+    # Footer note for therapist
+    pdf.ln(10)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.cell(0, 5, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    pdf.ln()
+    pdf.cell(0, 5, "CLIBuJo Mood Tracking Report")
+
+    pdf.output(str(output_path))
+    return output_path
+
+
+def export_mood_month(
+    year: int,
+    month: int,
+    output_path: Optional[Path] = None,
+) -> Path:
+    """Export a month of mood data to PDF.
+
+    Args:
+        year: Year
+        month: Month (1-12)
+        output_path: Optional output path
+
+    Returns:
+        Path to the generated PDF
+    """
+    days_in_month = monthrange(year, month)[1]
+    start_date = f"{year}-{month:02d}-01"
+    end_date = f"{year}-{month:02d}-{days_in_month:02d}"
+
+    if output_path is None:
+        month_name = date(year, month, 1).strftime("%B_%Y")
+        output_path = Path(f"mood_report_{month_name}.pdf")
+
+    return export_mood(start_date, end_date, output_path)

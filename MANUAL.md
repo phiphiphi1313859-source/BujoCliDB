@@ -1538,6 +1538,64 @@ bujo export collection "Q4 Goals"
 bujo export habits 2025-12
 ```
 
+### Mood Reports for Therapy
+
+Export your mood tracking data to PDF for therapy sessions:
+
+**Export a date range:**
+
+```bash
+bujo export mood 2025-11-01 2025-11-30
+```
+
+This creates a comprehensive PDF including:
+- Mood statistics summary (averages, ranges)
+- Mood trend chart (visual)
+- Daily mood entries with notes
+- Medication list
+- Episode history
+- Your baselines and targets
+
+**Export current month:**
+
+```bash
+bujo export mood-month
+```
+
+**Export a specific month:**
+
+```bash
+bujo export mood-month 2025-11
+```
+
+**Customize what's included:**
+
+```bash
+# Exclude the trend chart
+bujo export mood 2025-11-01 2025-11-30 --no-chart
+
+# Exclude medications
+bujo export mood 2025-11-01 2025-11-30 --no-meds
+
+# Exclude episode history
+bujo export mood 2025-11-01 2025-11-30 --no-episodes
+
+# Custom output path
+bujo export mood 2025-11-01 2025-11-30 -o therapy_report.pdf
+```
+
+**Example: Preparing for a Therapy Session**
+
+```bash
+# Export last month's mood data
+bujo export mood-month 2025-11 -o november_therapy.pdf
+
+# Or export since last session (custom date range)
+bujo export mood 2025-11-15 2025-12-02 -o therapy_dec2.pdf
+```
+
+The PDF is printer-friendly and formatted for easy review with your therapist.
+
 ### Custom Output Path
 
 ```bash
@@ -1779,6 +1837,8 @@ Recent actions:
 | `export range START END` | Export range |
 | `export collection NAME` | Export collection |
 | `export habits MONTH` | Export habit report |
+| `export mood START END` | Export mood report |
+| `export mood-month MONTH` | Export month's mood |
 
 ---
 
@@ -1869,6 +1929,7 @@ bujo habits list                View all
 # MOOD
 bujo mood quick 2 7 7.5         Quick log
 bujo mood today                 View today
+bujo export mood-month          Export for therapy
 
 # SYNC
 bujo sync push                  Upload

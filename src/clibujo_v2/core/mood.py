@@ -9,6 +9,17 @@ from typing import Optional, List, Dict, Any
 from .db import get_connection
 
 
+def validate_medication_name(name: str) -> str:
+    """Validate and clean medication name.
+
+    Raises:
+        ValueError: If name is empty or whitespace-only
+    """
+    if not name or not name.strip():
+        raise ValueError("Medication name cannot be empty or whitespace-only")
+    return name.strip()
+
+
 @dataclass
 class MoodEntry:
     """A daily mood entry."""
@@ -399,7 +410,14 @@ def get_medication_by_name(name: str,
 
 
 def add_medication(med: Medication, conn: Optional[sqlite3.Connection] = None) -> Medication:
-    """Add a new medication."""
+    """Add a new medication.
+
+    Raises:
+        ValueError: If medication name is empty or whitespace-only
+    """
+    # Validate name
+    med.name = validate_medication_name(med.name)
+
     should_close = conn is None
     if conn is None:
         conn = get_connection()
@@ -499,10 +517,22 @@ def get_current_episode(conn: Optional[sqlite3.Connection] = None) -> Optional[E
 def start_episode(ep_type: str, start_date: Optional[str] = None,
                   severity: Optional[int] = None,
                   conn: Optional[sqlite3.Connection] = None) -> Episode:
-    """Start a new episode."""
+    """Start a new episode.
+
+    Raises:
+        ValueError: If there's already an open episode
+    """
     should_close = conn is None
     if conn is None:
         conn = get_connection()
+
+    # Check for existing open episode
+    cursor = conn.execute("SELECT id FROM episodes WHERE end_date IS NULL")
+    existing = cursor.fetchone()
+    if existing:
+        if should_close:
+            conn.close()
+        raise ValueError("Cannot start new episode: there's already an open episode. End it first.")
 
     if start_date is None:
         start_date = date.today().isoformat()

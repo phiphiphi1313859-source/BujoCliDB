@@ -9,6 +9,17 @@ from .db import get_connection, ensure_db, cleanup_undo_history
 from .models import Collection, CollectionType
 
 
+def validate_name(name: str) -> str:
+    """Validate and clean collection name.
+
+    Raises:
+        ValueError: If name is empty or whitespace-only
+    """
+    if not name or not name.strip():
+        raise ValueError("Collection name cannot be empty or whitespace-only")
+    return name.strip()
+
+
 def _record_undo(
     conn: sqlite3.Connection,
     action_type: str,
@@ -47,7 +58,13 @@ def create_collection(
 
     Returns:
         The created Collection with id populated
+
+    Raises:
+        ValueError: If name is empty or whitespace-only
     """
+    # Validate name
+    name = validate_name(name)
+
     ensure_db()
     should_close = conn is None
     if conn is None:

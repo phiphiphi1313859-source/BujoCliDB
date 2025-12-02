@@ -150,3 +150,72 @@ def export_all(output):
         click.echo(f"Exported to: {result}")
     except ImportError as e:
         raise click.ClickException(str(e))
+
+
+@export.command("mood")
+@click.argument("start_date")
+@click.argument("end_date")
+@click.option("--output", "-o", type=click.Path(), help="Output file path")
+@click.option("--no-chart", is_flag=True, help="Exclude mood trend chart")
+@click.option("--no-meds", is_flag=True, help="Exclude medications list")
+@click.option("--no-episodes", is_flag=True, help="Exclude episode history")
+def export_mood_cmd(start_date, end_date, output, no_chart, no_meds, no_episodes):
+    """Export mood report for therapy.
+
+    Creates a PDF with mood entries, statistics, trend chart,
+    medications, and episode history for the given date range.
+
+    Example:
+        bujo export mood 2025-11-01 2025-11-30
+        bujo export mood 2025-11-01 2025-11-30 -o therapy_report.pdf
+    """
+    from ..utils.export import export_mood as do_export
+
+    try:
+        output_path = Path(output) if output else None
+        result = do_export(
+            start_date,
+            end_date,
+            output_path,
+            include_chart=not no_chart,
+            include_meds=not no_meds,
+            include_episodes=not no_episodes,
+        )
+        click.echo(f"Mood report exported to: {result}")
+    except ImportError as e:
+        raise click.ClickException(str(e))
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+
+@export.command("mood-month")
+@click.argument("month_arg", default=None, required=False)
+@click.option("--output", "-o", type=click.Path(), help="Output file path")
+def export_mood_month_cmd(month_arg, output):
+    """Export mood report for a month.
+
+    MONTH_ARG: YYYY-MM format, defaults to current month
+
+    Example:
+        bujo export mood-month
+        bujo export mood-month 2025-11
+    """
+    from ..utils.export import export_mood_month as do_export
+
+    if month_arg:
+        try:
+            year, month = map(int, month_arg.split("-"))
+        except ValueError:
+            raise click.ClickException("Invalid month format. Use YYYY-MM")
+    else:
+        today = date.today()
+        year, month = today.year, today.month
+
+    try:
+        output_path = Path(output) if output else None
+        result = do_export(year, month, output_path)
+        click.echo(f"Mood report exported to: {result}")
+    except ImportError as e:
+        raise click.ClickException(str(e))
+    except Exception as e:
+        raise click.ClickException(str(e))

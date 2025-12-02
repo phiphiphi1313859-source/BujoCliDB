@@ -1,12 +1,81 @@
 """Entry CRUD operations with FTS and undo support for CLIBuJo v2."""
 
 import json
+import re
 import sqlite3
 from datetime import date, datetime
 from typing import Optional, List, Tuple
 
 from .db import get_connection, ensure_db, cleanup_undo_history
 from .models import Entry, EntryType, TaskStatus, Signifier
+
+
+def validate_content(content: str) -> str:
+    """Validate and clean content string.
+
+    Raises:
+        ValueError: If content is empty or whitespace-only
+    """
+    if not content or not content.strip():
+        raise ValueError("Content cannot be empty or whitespace-only")
+    return content.strip()
+
+
+def validate_date(date_str: str) -> str:
+    """Validate date string is in YYYY-MM-DD format.
+
+    Raises:
+        ValueError: If date format is invalid
+    """
+    if not date_str:
+        raise ValueError("Date cannot be empty")
+
+    # Check format with regex
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+        raise ValueError(f"Invalid date format '{date_str}'. Use YYYY-MM-DD")
+
+    # Validate it's a real date
+    try:
+        year, month, day = map(int, date_str.split('-'))
+        datetime(year, month, day)  # Will raise if invalid
+    except ValueError:
+        raise ValueError(f"Invalid date '{date_str}'. Check month and day values")
+
+    return date_str
+
+
+def validate_month(month_str: str) -> str:
+    """Validate month string is in YYYY-MM format.
+
+    Raises:
+        ValueError: If month format is invalid
+    """
+    if not month_str:
+        raise ValueError("Month cannot be empty")
+
+    # Check format with regex
+    if not re.match(r'^\d{4}-\d{2}$', month_str):
+        raise ValueError(f"Invalid month format '{month_str}'. Use YYYY-MM")
+
+    # Validate month is 01-12
+    year, month = map(int, month_str.split('-'))
+    if month < 1 or month > 12:
+        raise ValueError(f"Invalid month '{month_str}'. Month must be 01-12")
+
+    return month_str
+
+
+def escape_fts_query(query: str) -> str:
+    """Escape special characters for FTS5 queries.
+
+    FTS5 uses certain characters as operators. This escapes them
+    so they're treated as literal characters.
+    """
+    # Characters that need escaping in FTS5
+    # Wrap the query in double quotes to treat it as a phrase/literal
+    # Also escape any internal double quotes
+    escaped = query.replace('"', '""')
+    return f'"{escaped}"'
 
 
 def _record_undo(
@@ -56,7 +125,17 @@ def create_entry(
 
     Returns:
         The created Entry with id populated
+
+    Raises:
+        ValueError: If content is empty/whitespace or date format is invalid
     """
+    # Validate inputs
+    content = validate_content(content)
+    if entry_date:
+        entry_date = validate_date(entry_date)
+    if entry_month:
+        entry_month = validate_month(entry_month)
+
     ensure_db()
     should_close = conn is None
     if conn is None:
@@ -410,13 +489,22 @@ def search_entries(
     limit: int = 50,
     conn: Optional[sqlite3.Connection] = None,
 ) -> List[Entry]:
-    """Full-text search entries."""
+    """Full-text search entries.
+
+    Special characters are escaped to prevent FTS5 syntax errors.
+    """
+    if not query or not query.strip():
+        return []
+
     ensure_db()
     should_close = conn is None
     if conn is None:
         conn = get_connection()
 
     try:
+        # Escape special characters for FTS5
+        escaped_query = escape_fts_query(query.strip())
+
         cursor = conn.execute(
             """
             SELECT e.* FROM entries e
@@ -425,7 +513,7 @@ def search_entries(
             ORDER BY rank
             LIMIT ?
             """,
-            (query, limit),
+            (escaped_query, limit),
         )
         return [Entry.from_row(row) for row in cursor.fetchall()]
     finally:

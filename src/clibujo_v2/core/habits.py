@@ -3,11 +3,22 @@
 import json
 import sqlite3
 from datetime import date, datetime, timedelta
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 from calendar import monthrange
 
 from .db import get_connection, ensure_db, cleanup_undo_history
 from .models import Habit, HabitCompletion, HabitStatus, FrequencyType
+
+
+def validate_habit_name(name: str) -> str:
+    """Validate and clean habit name.
+
+    Raises:
+        ValueError: If name is empty or whitespace-only
+    """
+    if not name or not name.strip():
+        raise ValueError("Habit name cannot be empty or whitespace-only")
+    return name.strip()
 
 
 def _record_undo(
@@ -49,6 +60,9 @@ def parse_frequency(freq_str: str) -> Tuple[str, int, Optional[str]]:
         'weekly:3' -> ('weekly', 3, None)
         'monthly:2' -> ('monthly', 2, None)
         'days:mon,wed,fri' -> ('specific_days', 3, 'mon,wed,fri')
+
+    Raises:
+        ValueError: If frequency format is invalid or values are impossible
     """
     freq_str = freq_str.lower().strip()
 
@@ -58,15 +72,30 @@ def parse_frequency(freq_str: str) -> Tuple[str, int, Optional[str]]:
         return ("weekly", 1, None)
     elif freq_str.startswith("weekly:"):
         target = int(freq_str.split(":")[1])
+        if target < 1 or target > 7:
+            raise ValueError(f"Weekly target must be 1-7, got {target}")
         return ("weekly", target, None)
     elif freq_str == "monthly":
         return ("monthly", 1, None)
     elif freq_str.startswith("monthly:"):
         target = int(freq_str.split(":")[1])
+        if target < 1 or target > 31:
+            raise ValueError(f"Monthly target must be 1-31, got {target}")
         return ("monthly", target, None)
     elif freq_str.startswith("days:"):
         days_part = freq_str.split(":")[1]
-        days = [d.strip()[:3] for d in days_part.split(",")]
+        if not days_part.strip():
+            raise ValueError("Days list cannot be empty")
+        # Validate each day is a valid abbreviation
+        valid_days = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+        days = []
+        for d in days_part.split(","):
+            day = d.strip()[:3].lower()
+            if day not in valid_days:
+                raise ValueError(f"Invalid day '{d}'. Use: mon, tue, wed, thu, fri, sat, sun")
+            days.append(day)
+        if not days:
+            raise ValueError("Days list cannot be empty")
         return ("specific_days", len(days), ",".join(days))
     else:
         raise ValueError(f"Invalid frequency format: {freq_str}")
@@ -87,14 +116,20 @@ def create_habit(
 
     Returns:
         The created Habit with id populated
+
+    Raises:
+        ValueError: If name is empty/whitespace or frequency is invalid
     """
+    # Validate inputs
+    name = validate_habit_name(name)
+    freq_type, freq_target, freq_days = parse_frequency(frequency)
+
     ensure_db()
     should_close = conn is None
     if conn is None:
         conn = get_connection()
 
     try:
-        freq_type, freq_target, freq_days = parse_frequency(frequency)
 
         cursor = conn.execute(
             """

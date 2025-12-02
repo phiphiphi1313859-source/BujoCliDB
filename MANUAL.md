@@ -76,45 +76,366 @@ CLIBuJo extends this with:
 
 ## 2. Installation
 
+CLIBuJo is installed from GitHub, not from PyPI. You'll download the code and install it locally. Don't worry - this guide will walk you through every step!
+
+### What You Need First
+
+Before installing CLIBuJo, you need two things on your computer:
+
+1. **Python** - The programming language CLIBuJo is written in (version 3.10 or newer)
+2. **Git** - A tool for downloading code from GitHub
+
+We'll show you how to install both for your system.
+
+---
+
 ### 2.1 Windows Terminal
 
-**Prerequisites**: Python 3.10 or newer
+#### Step 1: Install Python
 
-**Step 1: Install Python**
+Python is the programming language that runs CLIBuJo.
 
-1. Download Python from https://www.python.org/downloads/
-2. During installation, CHECK "Add Python to PATH"
-3. Click "Install Now"
+1. Open your web browser
+2. Go to: **https://www.python.org/downloads/**
+3. Click the big yellow button that says "Download Python 3.xx.x"
+4. Once downloaded, double-click the installer file
+5. **IMPORTANT**: On the first screen, CHECK the box that says **"Add Python to PATH"** (at the bottom)
+6. Click "Install Now"
+7. Wait for it to finish, then click "Close"
 
-**Step 2: Open Windows Terminal**
+**How to check if Python is installed:**
 
-Press `Win + X`, then click "Terminal" (or "Windows Terminal")
-
-**Step 3: Install CLIBuJo**
+Open Windows Terminal (press `Win + X`, then click "Terminal"), and type:
 
 ```powershell
-pip install clibujo
+python --version
 ```
 
-**Step 4: Initialize the database**
+You should see something like:
+
+```
+Python 3.12.0
+```
+
+If you see "Python was not found" or an error, try restarting your computer and checking again. If it still doesn't work, reinstall Python and make sure you checked "Add Python to PATH".
+
+#### Step 2: Install Git
+
+Git lets you download code from GitHub.
+
+1. Go to: **https://git-scm.com/download/win**
+2. The download should start automatically
+3. Run the installer
+4. Click "Next" through all the screens (the default options are fine)
+5. Click "Install"
+6. Click "Finish"
+
+**How to check if Git is installed:**
+
+In Windows Terminal, type:
+
+```powershell
+git --version
+```
+
+You should see something like:
+
+```
+git version 2.42.0.windows.1
+```
+
+#### Step 3: Choose Where to Put CLIBuJo
+
+You need a folder to store the CLIBuJo code. We'll use your Documents folder.
+
+In Windows Terminal, type these commands one at a time:
+
+```powershell
+cd Documents
+```
+
+This moves you to your Documents folder.
+
+#### Step 4: Download CLIBuJo from GitHub
+
+Now we'll download the CLIBuJo code:
+
+```powershell
+git clone https://github.com/phiphiphi1313859-source/BujoCliDB.git
+```
+
+You'll see something like:
+
+```
+Cloning into 'BujoCliDB'...
+remote: Enumerating objects: 67, done.
+remote: Counting objects: 100% (67/67), done.
+...
+```
+
+This creates a folder called "BujoCliDB" containing all the code.
+
+#### Step 5: Go Into the CLIBuJo Folder
+
+```powershell
+cd BujoCliDB
+```
+
+#### Step 6: Install CLIBuJo
+
+This command installs CLIBuJo on your computer:
+
+```powershell
+pip install -e .
+```
+
+**What does this mean?**
+- `pip` is Python's package installer
+- `install` means "install this program"
+- `-e` means "editable" (so you can update easily later)
+- `.` means "the current folder"
+
+You'll see lots of text scroll by. At the end, you should see "Successfully installed".
+
+#### Step 7: Initialize the Database
+
+CLIBuJo stores your journal in a database file. Create it with:
 
 ```powershell
 bujo init
 ```
 
-**What you should see:**
+You should see:
 
 ```
 Database initialized.
 ```
 
-**Step 5: Verify installation**
+#### Step 8: Verify Everything Works
 
 ```powershell
 bujo --version
 ```
 
-**Output:**
+You should see:
+
+```
+CLIBuJo v2.0.0
+```
+
+**Congratulations!** CLIBuJo is now installed. Try viewing your (empty) journal:
+
+```powershell
+bujo
+```
+
+---
+
+### 2.2 macOS
+
+#### Step 1: Open Terminal
+
+Press `Cmd + Space` to open Spotlight Search, type "Terminal", and press Enter.
+
+A window will open with a command prompt.
+
+#### Step 2: Install Homebrew (Package Manager)
+
+Homebrew makes it easy to install software on Mac. If you already have it, skip to Step 3.
+
+Copy and paste this entire line into Terminal and press Enter:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+Follow the prompts. You may need to enter your Mac password.
+
+**After Homebrew installs**, it will show you some commands to run. Look for text that says "Run these commands in your terminal". Copy and run those commands.
+
+#### Step 3: Install Python and Git
+
+```bash
+brew install python git
+```
+
+Wait for it to finish. This may take a few minutes.
+
+**Verify Python is installed:**
+
+```bash
+python3 --version
+```
+
+Should show something like `Python 3.12.0`
+
+**Verify Git is installed:**
+
+```bash
+git --version
+```
+
+Should show something like `git version 2.42.0`
+
+#### Step 4: Choose Where to Put CLIBuJo
+
+We'll put it in your home folder:
+
+```bash
+cd ~
+```
+
+The `~` symbol means "my home folder" (like /Users/yourname).
+
+#### Step 5: Download CLIBuJo from GitHub
+
+```bash
+git clone https://github.com/phiphiphi1313859-source/BujoCliDB.git
+```
+
+#### Step 6: Go Into the Folder
+
+```bash
+cd BujoCliDB
+```
+
+#### Step 7: Install CLIBuJo
+
+```bash
+pip3 install -e .
+```
+
+Note: On Mac, use `pip3` instead of `pip`.
+
+#### Step 8: Add to PATH (So Mac Can Find bujo)
+
+The `bujo` command might not work yet. We need to tell Mac where to find it.
+
+Run this command:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+```
+
+Then restart Terminal (close the window and open a new one), OR run:
+
+```bash
+source ~/.zshrc
+```
+
+#### Step 9: Initialize the Database
+
+```bash
+bujo init
+```
+
+You should see:
+
+```
+Database initialized.
+```
+
+#### Step 10: Verify It Works
+
+```bash
+bujo --version
+```
+
+Should show:
+
+```
+CLIBuJo v2.0.0
+```
+
+**You're all set!** Try `bujo` to see your journal.
+
+---
+
+### 2.3 WSL (Windows Subsystem for Linux - Arch)
+
+WSL lets you run Linux inside Windows. These instructions are for Arch Linux on WSL.
+
+#### Step 1: Open WSL
+
+Press `Win + R`, type `wsl`, press Enter. A Linux terminal window opens.
+
+#### Step 2: Update Your System
+
+Always update first:
+
+```bash
+sudo pacman -Syu
+```
+
+Type `y` when asked to proceed. Enter your password if asked (you won't see the characters as you type - that's normal).
+
+#### Step 3: Install Python and Git
+
+```bash
+sudo pacman -S python python-pip git
+```
+
+Type `y` when asked to proceed.
+
+#### Step 4: Create a Virtual Environment (Recommended)
+
+A virtual environment keeps CLIBuJo's files separate from your system. This is safer and cleaner.
+
+```bash
+python -m venv ~/bujo-env
+```
+
+This creates a virtual environment in a folder called "bujo-env" in your home directory.
+
+Now activate it:
+
+```bash
+source ~/bujo-env/bin/activate
+```
+
+Your prompt should now show `(bujo-env)` at the beginning, like:
+
+```
+(bujo-env) [user@computer ~]$
+```
+
+#### Step 5: Download CLIBuJo
+
+```bash
+cd ~
+git clone https://github.com/phiphiphi1313859-source/BujoCliDB.git
+```
+
+#### Step 6: Install CLIBuJo
+
+```bash
+cd BujoCliDB
+pip install -e .
+```
+
+#### Step 7: Initialize the Database
+
+```bash
+bujo init
+```
+
+#### Step 8: Make the Virtual Environment Permanent
+
+So you don't have to activate it every time, add it to your startup file:
+
+```bash
+echo 'source ~/bujo-env/bin/activate' >> ~/.bashrc
+```
+
+Now every time you open WSL, the environment will be ready.
+
+#### Step 9: Verify
+
+```bash
+bujo --version
+```
+
+Should show:
 
 ```
 CLIBuJo v2.0.0
@@ -122,128 +443,129 @@ CLIBuJo v2.0.0
 
 ---
 
-### 2.2 macOS
-
-**Step 1: Open Terminal**
-
-Press `Cmd + Space`, type "Terminal", press Enter
-
-**Step 2: Install Python (if needed)**
-
-macOS comes with Python, but you may need a newer version:
-
-```bash
-# Install Homebrew first (if you don't have it)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install Python
-brew install python
-```
-
-**Step 3: Install CLIBuJo**
-
-```bash
-pip3 install clibujo
-```
-
-**Step 4: Initialize**
-
-```bash
-bujo init
-```
-
-**Step 5: Add to PATH (if needed)**
-
-If you get "command not found", add this to your `~/.zshrc`:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-Then restart Terminal or run:
-
-```bash
-source ~/.zshrc
-```
-
----
-
-### 2.3 WSL (Arch Linux)
-
-**Step 1: Open WSL Terminal**
-
-Press `Win + R`, type `wsl`, press Enter
-
-**Step 2: Update system and install Python**
-
-```bash
-sudo pacman -Syu
-sudo pacman -S python python-pip
-```
-
-**Step 3: Create a virtual environment (recommended)**
-
-```bash
-python -m venv ~/bujo-env
-source ~/bujo-env/bin/activate
-```
-
-**Step 4: Install CLIBuJo**
-
-```bash
-pip install clibujo
-```
-
-**Step 5: Initialize**
-
-```bash
-bujo init
-```
-
-**Make it permanent**: Add this to your `~/.bashrc`:
-
-```bash
-source ~/bujo-env/bin/activate
-```
-
----
-
 ### 2.4 Termux (Android)
 
-**Step 1: Install Termux**
+Termux gives you a Linux command line on your Android phone or tablet.
 
-Download from F-Droid (NOT Google Play, which has an outdated version):
-https://f-droid.org/packages/com.termux/
+#### Step 1: Install Termux
 
-**Step 2: Update packages**
+**Important**: Download Termux from **F-Droid**, NOT the Google Play Store. The Play Store version is outdated and broken.
+
+1. On your Android device, open your browser
+2. Go to: **https://f-droid.org/packages/com.termux/**
+3. Tap "Download APK"
+4. When it downloads, tap the notification to install it
+5. You may need to allow "Install from unknown sources" in your settings
+
+Open Termux after installing.
+
+#### Step 2: Update Termux Packages
+
+First, update everything (do this regularly):
 
 ```bash
 pkg update && pkg upgrade
 ```
 
-**Step 3: Install Python**
+Type `y` when asked.
+
+#### Step 3: Install Python and Git
 
 ```bash
-pkg install python
+pkg install python git
 ```
 
-**Step 4: Install CLIBuJo**
+Type `y` when asked.
+
+#### Step 4: Download CLIBuJo
 
 ```bash
-pip install clibujo
+cd ~
+git clone https://github.com/phiphiphi1313859-source/BujoCliDB.git
 ```
 
-**Step 5: Initialize**
+#### Step 5: Install CLIBuJo
+
+```bash
+cd BujoCliDB
+pip install -e .
+```
+
+#### Step 6: Initialize
 
 ```bash
 bujo init
 ```
 
-**Storage access** (if you want to export files):
+#### Step 7: Set Up Storage Access (Optional)
+
+If you want to export files to your phone's storage:
 
 ```bash
 termux-setup-storage
 ```
+
+Tap "Allow" when Android asks for permission.
+
+#### Step 8: Verify
+
+```bash
+bujo --version
+```
+
+Should show:
+
+```
+CLIBuJo v2.0.0
+```
+
+**Tip for Termux**: Swipe from the left edge to access extra keys like Tab, Ctrl, and arrow keys.
+
+---
+
+### 2.5 Updating CLIBuJo
+
+When there's a new version of CLIBuJo, here's how to update:
+
+#### Step 1: Go to the CLIBuJo folder
+
+**Windows:**
+```powershell
+cd Documents\BujoCliDB
+```
+
+**Mac/Linux/Termux:**
+```bash
+cd ~/BujoCliDB
+```
+
+#### Step 2: Download the latest code
+
+```bash
+git pull
+```
+
+#### Step 3: Reinstall
+
+```bash
+pip install -e .
+```
+
+That's it! You now have the latest version.
+
+---
+
+### 2.6 Uninstalling CLIBuJo
+
+If you ever need to remove CLIBuJo:
+
+```bash
+pip uninstall clibujo
+```
+
+Type `y` when asked.
+
+Your journal data stays in `~/.local/share/bujo/bujo.db` - delete that file too if you want to remove everything.
 
 ---
 
@@ -1476,11 +1798,10 @@ $env:PATH += ";$env:APPDATA\Python\Python310\Scripts"
 
 ### "ModuleNotFoundError: No module named 'click'"
 
-**Solution:** Reinstall CLIBuJo:
+**Solution:** Reinstall CLIBuJo. Go to your BujoCliDB folder and run:
 
 ```bash
-pip uninstall clibujo
-pip install clibujo
+pip install -e .
 ```
 
 ### "Database is locked"
@@ -1493,10 +1814,10 @@ pip install clibujo
 
 ### "PDF export failed"
 
-**Solution:** Install the export dependencies:
+**Solution:** Install the export dependencies. Go to your BujoCliDB folder and run:
 
 ```bash
-pip install clibujo[export]
+pip install -e ".[export]"
 ```
 
 ### Data Location
